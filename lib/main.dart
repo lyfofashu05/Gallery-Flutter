@@ -1,122 +1,266 @@
+import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart';
+import 'package:flutter/services.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+// Import your fragment tabs
+import 'all_photos_tab.dart';
+import 'albums_tab.dart';
+import 'for_you_tab.dart';
+import 'search_tab.dart';
+
+void main() => runApp(const MyApp());
+
+enum _Tab { allPhotos, albums, forYou, search }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Gallery',
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.system,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.light,
+        colorSchemeSeed: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'InterSemiBold',
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorSchemeSeed: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'InterSemiBold',
+      ),
+      home: const HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class PopIcon extends StatefulWidget {
+  final Widget child;
+  final bool trigger;
+  final Duration duration;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const PopIcon({
+    super.key,
+    required this.child,
+    required this.trigger,
+    this.duration = const Duration(milliseconds: 195),
+  });
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<PopIcon> createState() => _PopIconState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _PopIconState extends State<PopIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  static const double peak = 1.25;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: peak)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: peak, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
+    ]).animate(_controller);
+    if (widget.trigger) {
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PopIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.trigger && !oldWidget.trigger) {
+      _controller.forward(from: 0.0);
+    } else if (!widget.trigger && oldWidget.trigger) {
+      _controller.value = 1.0;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) =>
+          Transform.scale(scale: _animation.value, child: child),
+      child: widget.child,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+  int _previousSelectedIndex = 0;
+
+  static const Map<_Tab, String> _labels = {
+    _Tab.allPhotos: "All Photos",
+    _Tab.albums: "Albums",
+    _Tab.forYou: "For You",
+    _Tab.search: "Search",
+  };
+
+  static const Map<_Tab, IconData> _cupertinoFilledIcons = {
+    _Tab.allPhotos: CupertinoIcons.photo_fill_on_rectangle_fill,
+    _Tab.albums: CupertinoIcons.square_stack_fill,
+    _Tab.forYou: CupertinoIcons.square_favorites_alt_fill,
+    _Tab.search: CupertinoIcons.search,
+  };
+
+  static const double minNavItemWidth = 66;
+
+  final List<Widget> _fragments = const [
+    AllPhotosTab(),
+    AlbumsTab(),
+    ForYouTab(),
+    SearchTab(),
+  ];
+
+  Widget navIcon({
+    required IconData cupertinoIcon,
+    required String label,
+    required bool selected,
+    required int index,
+    double size = 26,
+    required BuildContext context,
+  }) {
+    final theme = Theme.of(context);
+    final color = selected
+        ? CupertinoColors.activeBlue
+        : theme.colorScheme.onSurfaceVariant;
+
+    final isNewlySelected = index == _selectedIndex && index != _previousSelectedIndex;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        PopIcon(
+          trigger: isNewlySelected,
+          child: Icon(
+            cupertinoIcon,
+            size: size,
+            color: color,
+          ),
         ),
+        const SizedBox(height: 2),
+        SizedBox(
+          width: minNavItemWidth,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'InterSemiBold',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            maxLines: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onTap(int i) async {
+    if (_selectedIndex != i) {
+      if (await Vibration.hasVibrator() ?? true) {
+        if (await Vibration.hasAmplitudeControl() ?? true) {
+          Vibration.vibrate(duration: 80, amplitude: 128);
+        } else {
+          Vibration.vibrate(duration: 50);
+        }
+      }
+      setState(() {
+        _previousSelectedIndex = _selectedIndex;
+        _selectedIndex = i;
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Update system nav bar to match theme
+    final theme = Theme.of(context);
+    final barColor = theme.colorScheme.surface;
+    final barIconBrightness = theme.brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      systemNavigationBarColor: barColor,
+      systemNavigationBarIconBrightness: barIconBrightness,
+      systemNavigationBarDividerColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: barIconBrightness,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+
+    return Scaffold(
+      extendBody: true,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _fragments,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      bottomNavigationBar: CrystalNavigationBar(
+        height: 70,
+        borderWidth: 2,
+        outlineBorderColor: dark ? Colors.white38 : Colors.black26,
+        backgroundColor: theme.colorScheme.surface.withOpacity(0.7),
+        currentIndex: _selectedIndex,
+        onTap: _onTap,
+        items: [
+          for (int i = 0; i < _Tab.values.length; i++)
+            CrystalNavigationBarItem(
+              icon: navIcon(
+                cupertinoIcon: _cupertinoFilledIcons[_Tab.values[i]]!,
+                label: _labels[_Tab.values[i]]!,
+                selected: _selectedIndex == i,
+                index: i,
+                context: context,
+              ),
+              unselectedIcon: navIcon(
+                cupertinoIcon: _cupertinoFilledIcons[_Tab.values[i]]!,
+                label: _labels[_Tab.values[i]]!,
+                selected: false,
+                index: i,
+                context: context,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
